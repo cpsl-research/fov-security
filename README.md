@@ -1,13 +1,24 @@
-# AV Development Sandbox
-This is the easiest place to get started with AVstack. It already has [`avstack-core`][core] and [`avstack-api`][api] libraries situated in the appropriate places and dependencies set up with the `poetry.lock` file. Read on for more information on how to get going.
+# FOV Security Research Project
 
+This project is for the FOV security research task. This is a fork from the [`avdev-sandbox`][sandbox] that has all the `AVstack` dependencies set up.
 
-## Philosophy
+The FOV-specific analysis tools are under the `fov_analysis` folder.
 
-Pioneers of autonomous vehicles (AVs) promised to revolutionize the driving experience and driving safety. However, milestones in AVs have materialized slower than forecast. Two culprits are (1) the lack of verifiability of proposed state-of-the-art AV components, and (2) stagnation of pursuing next-level evaluations, e.g., vehicle-to-infrastructure (V2I) and multi-agent collaboration. In part, progress has been hampered by: the large volume of software in AVs, the multiple disparate conventions, the difficulty of testing across datasets and simulators, and the inflexibility of state-of-the-art AV components. To address these challenges, we present `AVstack`, an open-source, reconfigurable software platform for AV design, implementation, test, and analysis. `AVstack` solves the validation problem by enabling first-of-a-kind trade studies on datasets and physics-based simulators. `AVstack` solves the stagnation problem as a reconfigurable AV platform built on dozens of open-source AV components in a high-level programming language.
+## Contributing
 
-## Getting Started
-Check out tutorials on our [ReadTheDocs][rtd-page] page!
+To avoid adding large jupyter notebooks with images etc., please add the pre-commit hook to your git pipeline via `git config core.hooksPath hooks` in the terminal. This will wipe the notebooks of any cell output every time you commit. Ensure when you make a pull request that the notebooks have wiped the output.
+
+## Installation
+
+TLDR:
+```
+git clone --recurse-submodules https://github.com/cpsl-research/fov-security
+cd fov-security
+poetry install
+git config core.hooksPath hooks
+./initialize.sh /data/shared /data/shared/models
+poetry run jupyter notebook
+```
 
 ### Requirements
 This currently only works on a Linux distribution (tested on Ubuntu 20.04 and 22.04). It also only works with Python 3.10. [Poetry][poetry] must be installed on your system to handle the dependencies. Python 3.10 must be installed on your system.
@@ -19,10 +30,9 @@ This currently only works on a Linux distribution (tested on Ubuntu 20.04 and 22
 
 
 ### Installation
-The best way to get started is to run the following:
 ```
-git clone --recurse-submodules https://github.com/avstack-lab/avdev-sandbox/
-cd avdev-sandbox
+git clone --recurse-submodules https://github.com/cpsl-research/fov-security
+cd fov-security
 poetry install  # to install the dependencies
 ```
 
@@ -32,7 +42,7 @@ Try the following and see if it works.
 cd examples/hello_world
 poetry run python hello_import.py
 ```
-This will validate whether we can import `avstack` and `avapi`. Not very interesting, but we have to start somewhere!
+This will validate whether we can import `avstack` and `avapi`.
 
 ### Download Models and Datasets
 To get fancy with it, you'll need perception models and datasets. To install those, run
@@ -82,6 +92,7 @@ AVstack specific code is distributed under the MIT License.
 [rtd-page]: https://avstack.readthedocs.io/en/latest/
 [core]: https://github.com/avstack-lab/lib-avstack-core
 [api]: https://github.com/avstack-lab/lib-avstack-api
+[sandbox]: https://github.com/avstack-lab/avdev-sandbox
 [avstack-preprint]: https://arxiv.org/pdf/2212.13857.pdf
 [poetry]: https://github.com/python-poetry/poetry
 [mmdet-modelzoo]: https://mmdetection.readthedocs.io/en/stable/model_zoo.html

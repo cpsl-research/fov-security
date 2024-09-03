@@ -12,21 +12,21 @@ MODELFOLDER=${MODELFOLDER%/}  # remove trailing slash
 ################################
 
 ./submodules/lib-avstack-core/models/download_mmdet_models.sh $MODELFOLDER
-./submodules/lib-avstack-core/models/download_mmdet3d_models.sh $MODELFOLDER
-
+# ./submodules/lib-avstack-core/models/download_mmdet3d_models.sh $MODELFOLDER
+./submodules/lib-avstack-core/models/download_mmseg_models.sh $MODELFOLDER
 
 ################################
 # Download AV datasets
 ################################
 
 # -- kitti
-./submodules/lib-avstack-api/data/download_KITTI_ImageSets.sh $DATAFOLDER
-./submodules/lib-avstack-api/data/download_KITTI_object_data.sh $DATAFOLDER
-./submodules/lib-avstack-api/data/download_KITTI_raw_data.sh $DATAFOLDER
-./submodules/lib-avstack-api/data/download_KITTI_raw_tracklets.sh $DATAFOLDER
+# ./submodules/lib-avstack-api/data/download_KITTI_ImageSets.sh $DATAFOLDER
+# ./submodules/lib-avstack-api/data/download_KITTI_object_data.sh $DATAFOLDER
+# ./submodules/lib-avstack-api/data/download_KITTI_raw_data.sh $DATAFOLDER
+# ./submodules/lib-avstack-api/data/download_KITTI_raw_tracklets.sh $DATAFOLDER
 
 # -- nuscenes
-./submodules/lib-avstack-api/data/download_nuScenes_mini.sh $DATAFOLDER
+# ./submodules/lib-avstack-api/data/download_nuScenes_mini.sh $DATAFOLDER
 
 # -- carla (our custom)
 # ./submodules/lib-avstack-api/data/download_CARLA_datasets.sh ego-lidar $DATAFOLDER
@@ -34,5 +34,5 @@ MODELFOLDER=${MODELFOLDER%/}  # remove trailing slash
 
 
 # Link to the datasets
-# ln -sf ./submodules/lib-avstack-api/data $DATAFOLDER
-# ./data/add_custom_symlinks.sh
+ln -sf ./submodules/lib-avstack-api/data ./data
+./data/add_custom_symlinks.sh $DATAFOLDER
