@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "avdev-sandbox"
+name = "fov-security"
 version = "0.1.0-alpha.1"
-description = "Sandbox for development and analysis of autonomous vehicles"
+description = "Testing the security of field of view estimation algorithms"
 authors = ["Spencer Hallyburton <spencer.hallyburton@duke.edu>"]
 readme = "README.md"
 license = "MIT"
