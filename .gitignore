@@ -1,3 +1,7 @@
+scripts/segmentation_training
+scripts/graph_training
+
+*.pth
 .vscode
 *.gif
 carla_eggs/*.egg
@@ -11,7 +15,9 @@ __pycache__
 .ipynb_checkpoints/
 
 # DATA
+scripts/models
 /sim-results/
+*.pdf
 *.p
 *.pkl
 *.txt
