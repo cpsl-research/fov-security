@@ -10,11 +10,9 @@ from avstack.sensors import LidarData
 from PIL import Image
 from tqdm import tqdm
 
-from fov.segmentation.preprocess import (
-    point_cloud_to_gt_seg,
-    point_cloud_to_image,
-    preprocess_point_cloud,
-)
+from fov.graph.preprocess import get_node_ground_truth_bev_boundary
+from fov.preprocess import preprocess_point_cloud_for_bev
+from fov.segmentation.preprocess import point_cloud_to_gt_seg, point_cloud_to_image
 
 
 def apply_adversary(
@@ -100,12 +98,8 @@ def main(args):
     ann_base = os.path.join(data_output_dir, "ann")
     img_base = os.path.join(data_output_dir, "img")
     pcs_base = os.path.join(data_output_dir, "pcs")
-    if os.path.exists(ann_base):
-        shutil.rmtree(ann_base)
-    if os.path.exists(img_base):
-        shutil.rmtree(img_base)
-    if os.path.exists(pcs_base):
-        shutil.rmtree(pcs_base)
+    if os.path.exists(data_output_dir):
+        shutil.rmtree(data_output_dir)
 
     # loop over the splits
     for split in ["train", "val", "test"]:
@@ -113,9 +107,8 @@ def main(args):
         ann_folder = os.path.join(ann_base, split)
         img_folder = os.path.join(img_base, split)
         pcs_folder = os.path.join(pcs_base, split)
-        os.makedirs(ann_folder)
-        os.makedirs(img_folder)
-        os.makedirs(pcs_folder)
+        for folder in [ann_folder, img_folder, pcs_folder]:
+            os.makedirs(folder)
 
         # loop over all the carla scenes
         print(f"...processing {len(CSM.splits_scenes[split])} scenes for split {split}")
@@ -143,7 +136,7 @@ def main(args):
                         pc = CDM.get_lidar(frame=frame, sensor=sensor, agent=agent.ID)
 
                     # project the point cloud to bev and center for saving
-                    pc_preproc = preprocess_point_cloud(pc)
+                    pc_preproc = preprocess_point_cloud_for_bev(pc)
 
                     # apply adversary model on top of point cloud
                     if args.adversarial:
@@ -168,8 +161,28 @@ def main(args):
                     pc_path = os.path.join(pcs_folder, pc_file)
                     np.save(pc_path, pc_preproc.data.x)
 
+                    ##############################################
+                    # GET GROUND TRUTH OUTCOMES
+                    ##############################################
+
                     # get the ground truth segmentation mask
                     gt_seg, gt_img = point_cloud_to_gt_seg(pc)
+
+                    # get the ground truth graph
+                    pc_bev = preprocess_point_cloud_for_bev(pc)
+                    gt_node_class = (
+                        get_node_ground_truth_bev_boundary(
+                            pc_bev, d_boundary_threshold=0.5
+                        )
+                        .numpy()
+                        .astype(int)
+                        .astype(str)
+                        .tolist()
+                    )
+
+                    ##############################################
+                    # PACKAGE UP RESULTS
+                    ##############################################
 
                     # add metadata to the gt seg json
                     metadata = {
@@ -188,17 +201,24 @@ def main(args):
                     # save the ground truth files
                     gt_seg_file = f"{i_frame:08d}_polygons.json"
                     gt_img_file = f"{i_frame:08d}_segimage.png"
-                    for gt, file in zip([gt_seg, gt_img], [gt_seg_file, gt_img_file]):
+                    gt_nod_file = f"{i_frame:08d}_nodeclass.txt"
+                    for gt, file in zip(
+                        [gt_seg, gt_img, gt_node_class],
+                        [gt_seg_file, gt_img_file, gt_nod_file],
+                    ):
                         gt_path = os.path.join(ann_folder, file)
-                        if "json" in file:
+                        if file.endswith("json"):
                             try:
                                 with open(gt_path, "w") as f:
                                     json.dump(gt, f)
                             except TypeError:
                                 breakpoint()
-                        elif "png" in file:
+                        elif file.endswith("png"):
                             pimg = Image.fromarray(gt)
                             pimg.save(gt_path)
+                        elif file.endswith("txt"):
+                            with open(gt_path, "w") as f:
+                                f.write(", ".join(gt))
                         else:
                             raise NotImplementedError
 

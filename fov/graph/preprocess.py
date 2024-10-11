@@ -9,37 +9,11 @@ import torch
 from avstack.modules.perception.fov_estimator import FastRayTraceBevLidarFovEstimator
 from torch_geometric.data import Data
 
+from fov.preprocess import preprocess_point_cloud_for_bev
 
-def preprocess_point_cloud_for_bev(
-    pc: "LidarData",
-    is_infrastructure: bool = False,
-    z_min: float = -3.0,
-    z_max: float = 3.0,
-) -> "LidarData":
-    """Applies preprocessing and filtering to the point cloud
 
-    Steps:
-        - project to ground plane
-        - filter to between (zmin, zmax) height in cartesian
-        - (if infrastruscture) center the pointcloud about centroid
-
-    Output is lidar data with the features as follows:
-        x: cartesian x position
-        y: cartesian y position
-        range: polar range on [0, inf]
-        azimuth: polar azimuth angle on [-pi, pi]
-        intensity: returned intensity on [0, 1]
-    """
-    # steps 1-2: project to ground plane and filter to height
-    pc_bev = pc.project_to_2d_bev(z_min=z_min, z_max=z_max)
-
-    # step 3: center on the centroid if infrastructure
-    if is_infrastructure:
-        centroid = np.mean(pc_bev.data.x[:, :2], axis=0)
-        pc_bev.data.x -= centroid
-        pc_bev.reference.x[:2] += centroid
-
-    # finally, get some node-level features from the data
+def add_range_az_features(pc_bev: "LidarData"):
+    """Augment the BEV point cloud with range, azimuth features"""
     pc_bev_azimuth = np.arctan2(pc_bev.data.x[:, 1], pc_bev.data.x[:, 0])
     pc_bev_range = np.linalg.norm(pc_bev.data.x, axis=1)
     pc_bev.data.x = np.insert(pc_bev.data.x, [2], pc_bev_range[:, None], axis=1)
@@ -51,7 +25,6 @@ def preprocess_point_cloud_for_bev(
 def get_edges_point_cloud_bev(
     pc_bev: "LidarData",
     n_closest_edges: int = 5,
-    # delta_az_max: float = 0.10,
 ) -> torch.Tensor:
     """Takes in a point cloud and gets edges and features
 
@@ -129,6 +102,7 @@ def point_cloud_to_bev_graph(
     """
     # preprocess the point cloud into a bev reference
     pc_bev = preprocess_point_cloud_for_bev(pc)
+    pc_bev = add_range_az_features(pc_bev)
     nodes = torch.tensor(pc_bev.data.x, dtype=torch.float)
 
     # get the edge indices and features
