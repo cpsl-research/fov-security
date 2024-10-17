@@ -93,9 +93,12 @@ class TrainTestInfrastructure:
                         starttime = time()
                         voutputs = self.model(vinputs)
                         endtime = time()
-                        running_vtime += (endtime - starttime) / vinputs.shape[
-                            0
-                        ]  # divide by batch size
+                        try:
+                            n_batch = vinputs.shape[0]
+                        except AttributeError:
+                            n_batch = 1
+                        # divide by batch size
+                        running_vtime += (endtime - starttime) / n_batch
                         vloss = self.loss(voutputs, vlabels)
                         running_vloss += vloss.detach().item()
                         all_vlabels.append(vlabels.detach())
@@ -118,14 +121,7 @@ class TrainTestInfrastructure:
                 # for both training and validation
                 writer.add_scalar("Loss/validation", avg_vloss, epoch)
                 writer.add_scalar("Metrics/inference_time", avg_vtime, epoch)
-                for k, v in vmetrics.items():
-                    if v is None:
-                        continue
-                    else:
-                        try:
-                            writer.add_scalar(f"Metrics/{k}", v, epoch)
-                        except AssertionError:
-                            pass  # don't know how to add vector data...
+                self._write_metrics(writer, vmetrics, epoch)
 
                 # Track best performance, and save the model's state
                 if avg_vloss < best_vloss:
@@ -193,8 +189,7 @@ class TrainTestInfrastructure:
                 running_loss = 0.0
 
                 # -- add metrics to writer
-                for k, v in _last_metrics.items():
-                    writer.add_scalar("Metrics/train/{}".format(k), v, tb_x)
+                self._write_metrics(writer, _last_metrics, tb_x)
 
             # backpropagation
             loss.backward()
@@ -217,6 +212,17 @@ class TrainTestInfrastructure:
     def loss(self, outputs, labels):
         """Can be overriden in subclass if needed"""
         return self.criterion(outputs, labels)
+
+    @staticmethod
+    def _write_metrics(writer, metrics, epoch):
+        for k, v in metrics.items():
+            if v is None:
+                continue
+            else:
+                try:
+                    writer.add_scalar(f"Metrics/{k}", v, epoch)
+                except AssertionError:
+                    pass  # don't know how to add vector data...
 
     def metrics(self, outputs, labels):
         raise NotImplementedError
