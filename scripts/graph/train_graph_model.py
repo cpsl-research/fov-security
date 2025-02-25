@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+
 import torch
 from torch.utils.data import random_split
 from torch_geometric.loader import DataLoader
@@ -58,8 +59,12 @@ def main(args):
 
 if __name__ == "__main__":
     parser = ArgumentParser()
-    parser.add_argument("--data_input", type=str, default="/data/shared/CARLA/multi-agent-v1")
-    parser.add_argument("--data_output", type=str, default="/data/shared/fov/fov_bev_graph")
+    parser.add_argument(
+        "--data_input", type=str, default="/data/shared/CARLA/multi-agent-v1"
+    )
+    parser.add_argument(
+        "--data_output", type=str, default="/data/shared/fov/fov_bev_graph"
+    )
     parser.add_argument("--log_dir", type=str, default="models/graph_training")
     args = parser.parse_args()
     main(args)
