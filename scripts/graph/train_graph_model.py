@@ -1,3 +1,4 @@
+from argparse import ArgumentParser
 import torch
 from torch.utils.data import random_split
 from torch_geometric.loader import DataLoader
@@ -8,17 +9,15 @@ from fov.graph.models import GATModel
 from fov.train import BinaryGraphClassification
 
 
-def main():
+def main(args):
     # set the device
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print(f"Using device {device}")
 
     # get the dataset
-    data_dir_input = "/data/shared/CARLA/multi-agent-v1"
-    data_dir_output = "/data/shared/fov"
     full_dataset = CarlaFieldOfViewDataset(
-        carla_root_directory=data_dir_input,
-        graph_root_directory=data_dir_output,
+        carla_root_directory=args.data_input,
+        graph_root_directory=args.data_output,
         include_infrastructure_agents=False,
         n_frames_max=1000,
         force_reload=False,
@@ -46,7 +45,7 @@ def main():
     # set up train/test infrastructure
     infrastructure = BinaryGraphClassification(
         model=model,
-        save_folder="graph_training",
+        save_folder=args.log_dir,
         optimizer=optimizer,
         train_loader=train_loader,
         val_loader=val_loader,
@@ -58,4 +57,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = ArgumentParser()
+    parser.add_argument("--data_input", type=str, default="/data/shared/CARLA/multi-agent-v1")
+    parser.add_argument("--data_output", type=str, default="/data/shared/fov/fov_bev_graph")
+    parser.add_argument("--log_dir", type=str, default="models/graph_training")
+    args = parser.parse_args()
+    main(args)

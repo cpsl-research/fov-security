@@ -8,19 +8,8 @@ import numpy as np
 from avstack.geometry.fov import points_in_fov
 from avstack.modules.perception.fov_estimator import FastRayTraceBevLidarFovEstimator
 
-from .dataset import fov_bev_classes
-
-
-def preprocess_point_cloud(pc: "LidarData", max_range: float = 100) -> "LidarData":
-    """Run BEV projection and centering"""
-    # filter the points by max range
-    pc_filter = pc.filter_by_range(min_range=0, max_range=max_range, inplace=False)
-
-    # convert the pc to bev and center
-    pc_bev = pc_filter.project_to_2d_bev(z_min=-3.0, z_max=3.0)
-    pc_bev.data.x[:, :2] -= np.mean(pc_bev.data.x[:, :2], axis=0)
-
-    return pc_bev
+from fov.preprocess import preprocess_point_cloud_for_bev
+from fov.segmentation.dataset import fov_bev_classes
 
 
 def point_cloud_to_image(
@@ -35,7 +24,7 @@ def point_cloud_to_image(
 
     # preprocess the point cloud
     if do_preprocess:
-        pc_bev = preprocess_point_cloud(pc, max_range=max_range)
+        pc_bev = preprocess_point_cloud_for_bev(pc, max_range=max_range)
     else:
         # assume we already did the preprocessing
         pc_bev = pc
@@ -63,7 +52,7 @@ def point_cloud_to_gt_seg(
     """
 
     # preprocess the point cloud
-    pc_bev = preprocess_point_cloud(pc, max_range=max_range).data.x
+    pc_bev = preprocess_point_cloud_for_bev(pc, max_range=max_range).data.x
 
     # filter out the points outside the extent
     c1 = pc_bev[:, 0] < extent[0][1]
