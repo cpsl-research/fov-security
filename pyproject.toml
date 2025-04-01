@@ -21,7 +21,7 @@ torch_geometric = "^2.4"
 torcheval = "^0"
 polylidar = "~1"
 # NOTE: torch cluster binary must match the torch version in AVstack....NOTE the 1.13.0 below is ok with 1.13.1 of torch
-torch-cluster = [
+torch-cluster = [ 
     {url="https://data.pyg.org/whl/torch-1.13.0%2Bcu117/torch_cluster-1.6.0%2Bpt113cu117-cp310-cp310-linux_x86_64.whl", markers="platform_machine == 'x86_64'"},
 ]
 lib-avstack-api = { path = "submodules/lib-avstack-api", develop = true }

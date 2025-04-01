@@ -9,7 +9,7 @@ from avstack.geometry.fov import points_in_fov
 from avstack.modules.perception.fov_estimator import FastRayTraceBevLidarFovEstimator
 
 from fov.preprocess import preprocess_point_cloud_for_bev
-from fov.segmentation.dataset import fov_bev_classes
+from fov.segmentation.plotting import fov_bev_classes
 
 
 def point_cloud_to_image(
@@ -46,13 +46,17 @@ def point_cloud_to_gt_seg(
     max_range: float = 100,
     img_size: Tuple[int, int] = (512, 512),
     extent: List[Tuple[float, float]] = [(-80, 80), (-80, 80)],
+    do_preprocess: bool = True,
 ) -> Tuple[Dict, np.ndarray]:
     """Perform FOV ground truth estimation
     NOTE: the input parameters must match the point cloud to image
     """
 
     # preprocess the point cloud
-    pc_bev = preprocess_point_cloud_for_bev(pc, max_range=max_range).data.x
+    if do_preprocess:
+        pc_bev = preprocess_point_cloud_for_bev(pc, max_range=max_range).data.x
+    else:
+        pc_bev = pc
 
     # filter out the points outside the extent
     c1 = pc_bev[:, 0] < extent[0][1]
@@ -90,6 +94,8 @@ def point_cloud_to_gt_seg(
             {
                 "label": "visible",
                 "polygon": bd,
+                "dx": dx,
+                "dy": dy,
             }
         ],
     }

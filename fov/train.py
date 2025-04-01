@@ -49,6 +49,8 @@ class TrainTestInfrastructure:
         early_stopping: int = 5,
         early_stopping_frac: float = 0.05,
         val_freq: int = 5,
+        run_auprc: bool = False,
+        max_batches: Optional[int] = None,
         *args,
         **kwargs,
     ):
@@ -61,6 +63,7 @@ class TrainTestInfrastructure:
         writer = SummaryWriter(f"{out_folder}/log")
         best_vloss = 1_000_000.0
         last_losses = []
+        last_improvements = []
 
         for epoch in range(epochs):
             print("EPOCH {}:".format(epoch))
@@ -68,7 +71,7 @@ class TrainTestInfrastructure:
             # make a pass over the data with training on
             self.model.train()
             avg_loss = self._train_one_epoch(
-                epoch=epoch, writer=writer, *args, **kwargs
+                epoch=epoch, writer=writer, max_batches=max_batches, *args, **kwargs
             )
 
             # write to tensorboard
@@ -113,7 +116,7 @@ class TrainTestInfrastructure:
                 vmetrics = self.metrics(
                     torch.cat(all_voutputs, dim=0),
                     torch.cat(all_vlabels, dim=0),
-                    run_auprc=True,
+                    run_auprc=run_auprc,
                     loss_fn=None,
                 )
 
@@ -124,6 +127,8 @@ class TrainTestInfrastructure:
                 self._write_metrics(writer, vmetrics, epoch)
 
                 # Track best performance, and save the model's state
+                pct_improvement = (best_vloss - avg_vloss) / best_vloss
+                print(f"Percent improvement over best: {100*pct_improvement:.2f}%")
                 if avg_vloss < best_vloss:
                     best_vloss = avg_vloss
                     model_path = os.path.join(out_folder, "epoch_{}.pth".format(epoch))
@@ -133,15 +138,20 @@ class TrainTestInfrastructure:
                 # keep track of early stopping
                 if len(last_losses) < early_stopping:
                     last_losses.append(avg_vloss)
+                    last_improvements.append(pct_improvement)
                 else:
+                    # add the new last-loss
                     last_losses.pop(0)
                     last_losses.append(avg_loss)
-                    pct_change = (last_losses[0] - last_losses[-1]) / last_losses[0]
-                    if pct_change < early_stopping_frac:
+                    last_improvements.pop(0)
+                    last_improvements.append(pct_improvement)
+
+                    # early stopping is if we haven't improved the loss
+                    any_improvement = any([imp > early_stopping_frac for imp in last_improvements])
+                    if not any_improvement:
                         print(
-                            f"Stopping early after minimal ({pct_change}) "
-                            f"improvement in {early_stopping} iterations "
-                            f"versus threshold ({early_stopping_frac})"
+                            f"Stopping early after minimal (<{early_stopping_frac}) "
+                            f"improvement in last {early_stopping} iterations "
                         )
                         break
 
@@ -153,6 +163,7 @@ class TrainTestInfrastructure:
         writer: Optional[SummaryWriter] = None,
         i_metrics_iter: int = 10,
         i_write_iter: int = 10,
+        max_batches: Optional[int] = None,
         *args,
         **kwargs,
     ):
@@ -165,6 +176,10 @@ class TrainTestInfrastructure:
         for i, data in enumerate(self.train_loader):
             # print(torch.cuda.memory_allocated() / torch.cuda.max_memory_allocated())
             # breakpoint()
+
+            if max_batches is not None:
+                if i >= max_batches:
+                    return last_loss
 
             # zero gradients every batch
             self.optimizer.zero_grad()
